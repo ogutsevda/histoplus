@@ -58,8 +58,15 @@ def detect_tissue_on_wsi(
 
     mask = _apply_otsu_threshold(slide, width_at_target_mpp, height_at_target_mpp)
 
-    num_cols = math.floor(width_at_target_mpp / tile_size_at_target_mpp)
-    num_rows = math.floor(height_at_target_mpp / tile_size_at_target_mpp)
+    # OpenSlide's get_thumbnail fits the image inside the requested box while
+    # preserving the aspect ratio, so the returned mask can be a pixel or two
+    # smaller than the size asked for. Sizing the tile grid from the requested
+    # dimensions then over-counts and the reshape below raises. Derive the grid
+    # from the mask that actually came back; when the two agree this is a no-op.
+    mask_height, mask_width = mask.shape
+
+    num_cols = math.floor(mask_width / tile_size_at_target_mpp)
+    num_rows = math.floor(mask_height / tile_size_at_target_mpp)
 
     # Crop mask to make it reshapable (fix the math.floor)
     mask_cropped = mask[
